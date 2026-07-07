@@ -1,0 +1,38 @@
+# 密钥文件 — 绝不提交！
+backend/.env
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+*.egg
+
+# PyInstaller
+*.spec.bak
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 系统
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 用户数据
+data/
+!data/.gitkeep
+
+# 环境
+venv/
+env/
+.venv/
+
+# 后台任务临时文件
+tasks/
