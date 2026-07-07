@@ -1,0 +1,32 @@
+# Git
+.git/
+.gitignore
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+venv/
+env/
+.venv/
+
+# Build
+dist/
+build/
+*.spec
+
+# IDE
+.vscode/
+.idea/
+
+# Data (will be mounted as volume)
+data/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Secrets (mounted separately)
+.env

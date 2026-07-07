@@ -196,6 +196,31 @@ async def get_prompts():
     return {"success": True, "result": SYSTEM_PROMPTS}
 
 
+# ========== 数据统计（SQLite）==========
+@app.get("/api/stats")
+async def get_stats(req: Request):
+    """今日 API 调用统计"""
+    if err := _guard(req): return err
+    from database import ApiLogDB, HistoryDB
+    api_stats = ApiLogDB.stats()
+    history = HistoryDB.list(page=1, size=5)
+    return {
+        "success": True,
+        "result": {
+            "api_today": api_stats,
+            "recent_history": history["items"]
+        }
+    }
+
+
+# ========== 数据库历史记录（SQLite）==========
+@app.get("/api/history")
+async def get_history(req: Request, page: int = 1, size: int = 20):
+    if err := _guard(req): return err
+    from database import HistoryDB
+    return {"success": True, "result": HistoryDB.list(page, size)}
+
+
 # ========== 健康检查 ==========
 @app.get("/api/health")
 async def health_check():

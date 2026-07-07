@@ -1,0 +1,15 @@
+# ===== AI学习助手 v2.0 — 一键部署 =====
+version: "3.8"
+
+services:
+  ai-assistant:
+    build: .
+    container_name: ai-study-assistant
+    ports:
+      - "8000:8000"
+    environment:
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}  # 从 .env 文件读取
+    volumes:
+      - ./backend/data:/app/data              # 持久化数据
+      - ./backend/.env:/app/backend/.env:ro   # 挂载密钥文件（只读）
+    restart: unless-stopped
