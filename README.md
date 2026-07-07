@@ -238,5 +238,5 @@ MIT © [Mapl1n](https://github.com/Mapl1n)
 ---
 
 <p align="center">
-  <sub>Built with ❤️ by 马芝航 | 2026</sub>
+  <sub>Built with ❤️ by Mapl1n | 2026</sub>
 </p>
