@@ -23,8 +23,10 @@ RUN mkdir -p /app/data/exports
 # 暴露端口
 EXPOSE 8000
 
-# 环境变量（部署时通过 docker-compose 或 -e 传入真实 Key）
+# 环境变量（部署时通过 docker-compose 或 -e 传入真实值）
 ENV DEEPSEEK_API_KEY=你的DeepSeek-API-Key
+ENV ACCESS_PASSWORD=study2024
+ENV LOCAL_AUTH_BYPASS=false
 
 # 启动 Web 服务
 CMD ["python", "-m", "uvicorn", "backend.app:app", "--host", "0.0.0.0", "--port", "8000"]

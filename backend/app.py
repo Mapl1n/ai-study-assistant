@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, HTMLResponse
 from pydantic import BaseModel
 from typing import Optional
+import os
 import json
 import queue
 import threading
@@ -16,8 +17,9 @@ import uvicorn
 from core import call_ai, call_ai_stream, SYSTEM_PROMPTS, parse_pdf_from_bytes
 
 # ========== 安全配置 ==========
-ACCESS_PASSWORD = "study2024"      # 访问密码（修改为你自己的）
-DAILY_LIMIT = 20                    # 每 IP 每天最大请求次数
+ACCESS_PASSWORD = os.getenv("ACCESS_PASSWORD", "study2024")  # 从环境变量读取
+LOCAL_AUTH_BYPASS = os.getenv("LOCAL_AUTH_BYPASS", "false").lower() == "true"
+DAILY_LIMIT = int(os.getenv("DAILY_LIMIT", "20"))             # 每 IP 每天最大请求次数
 
 # IP 频率限制（内存记录）
 _ip_usage = defaultdict(list)       # {ip: [timestamp, ...]}
@@ -80,6 +82,11 @@ async def auth(req: AuthRequest):
 # ========== 认证检查 ==========
 def _guard(req: Request):
     """验证身份 + 频率限制，失败时返回 None（表示错误响应）"""
+    # 本地桌面应用绕过认证（需要 LOCAL_AUTH_BYPASS=true）
+    if LOCAL_AUTH_BYPASS:
+        client_ip = req.client.host if req.client else ""
+        if client_ip in ("127.0.0.1", "::1", "localhost"):
+            return None  # 本地请求跳过认证
     if not check_auth(req):
         return {"success": False, "result": "🔒 未授权，请先输入访问密码"}
     ip = req.client.host if req.client else "unknown"

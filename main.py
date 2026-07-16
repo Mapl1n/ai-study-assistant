@@ -7,16 +7,14 @@ from PySide6.QtWidgets import *
 from PySide6.QtCore import QThread, Signal
 from PySide6.QtGui import QTextCursor
 
-# ========== 从 backend 导入核心功能（避免代码重复）==========
+# ========== 从 backend 导入核心功能（统一使用 SQLite 存储）==========
 from backend.core import call_ai_stream, SYSTEM_PROMPTS, export_result
+from backend.database import HistoryDB, TemplateDB
 
-# ========== main.py 独有配置（桌面端数据目录）==========
-DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
-HISTORY_FILE = os.path.join(DATA_DIR, "history.json")
-TEMPLATE_FILE = os.path.join(DATA_DIR, "templates.json")
-EXPORT_DIR = os.path.join(DATA_DIR, "exports")
+# ========== main.py 配置（与 FastAPI 后端共享 SQLite 数据目录）==========
+DATA_DIR = os.path.join(os.path.dirname(__file__), "backend", "data")
+EXPORT_DIR = os.path.join(os.path.dirname(__file__), "data", "exports")
 
-os.makedirs(DATA_DIR, exist_ok=True)
 os.makedirs(EXPORT_DIR, exist_ok=True)
 
 
@@ -39,47 +37,33 @@ class AIWorker(QThread):
             self.error.emit(str(e))
 
 
-# ========== 历史记录管理 ==========
+# ========== 历史记录管理（使用 SQLite，与 Web 后端共享）==========
 class HistoryManager:
     @staticmethod
     def load():
-        if os.path.exists(HISTORY_FILE):
-            with open(HISTORY_FILE, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        return []
-
-    @staticmethod
-    def save(history):
-        with open(HISTORY_FILE, 'w', encoding='utf-8') as f:
-            json.dump(history, f, ensure_ascii=False, indent=2)
+        """加载历史记录列表（返回 list[dict]）"""
+        return HistoryDB.list(page=1, size=200).get("items", [])
 
     @staticmethod
     def add(mode, user_input, result):
-        history = HistoryManager.load()
-        history.append({
-            "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "mode": mode,
-            "input": user_input[:200] + ("..." if len(user_input) > 200 else ""),
-            "result": result
-        })
-        if len(history) > 200:
-            history = history[-200:]
-        HistoryManager.save(history)
+        """添加一条历史记录"""
+        mode_key = mode.replace("📖 ", "").replace("📝 ", "").replace("📋 ", "").replace("💬 ", "")
+        HistoryDB.add(mode_key, user_input, result)
 
 
-# ========== 提示词模板管理 ==========
+# ========== 提示词模板管理（使用 SQLite，与 Web 后端共享）==========
 class TemplateManager:
     @staticmethod
     def load():
-        if os.path.exists(TEMPLATE_FILE):
-            with open(TEMPLATE_FILE, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        return {}
+        """加载模板字典 {name: content}"""
+        return TemplateDB.list_all() or {}
 
     @staticmethod
     def save(templates):
-        with open(TEMPLATE_FILE, 'w', encoding='utf-8') as f:
-            json.dump(templates, f, ensure_ascii=False, indent=2)
+        """保存模板（合并写入）"""
+        if isinstance(templates, dict):
+            for name, content in templates.items():
+                TemplateDB.save(name, content)
 
 
 # ========== 主窗口 ==========
@@ -404,8 +388,8 @@ class AIStudyApp(QMainWindow):
             self.status_label.setStyleSheet("color: #27ae60;")
 
     def clear_history(self):
-        if QMessageBox.question(self, "确认", "确定要清空所有历史记录吗？") == QMessageBox.Yes:
-            HistoryManager.save([])
+        if QMessageBox.question(self, "确认", "确定要清空所有历史记录吗？") == QMessageBox.StandardButton.Yes:
+            HistoryDB.clear()
             self.load_history_list()
             self.status_label.setText("✅ 历史已清空")
             self.status_label.setStyleSheet("color: #27ae60;")
